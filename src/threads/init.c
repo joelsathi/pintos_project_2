@@ -132,8 +132,71 @@ pintos_init (void)
   if (*argv != NULL) {
     /* Run actions specified on kernel command line. */
     run_actions (argv);
-  } else {
-    // TODO: no command line passed to kernel. Run interactively 
+  } else {    
+    /* Run interactive command loop. */ 
+      
+    // printing group number
+
+    printf("\n");
+    printf("---------------------------------------------------\n");
+    printf("///////////////////  Group 100  ///////////////////\n");
+    printf("---------------------------------------------------\n");
+    printf("\n");
+    
+    // start of functional loop
+    while (true) {
+      printf("CS2042>>");
+      char line[128];
+      input_init();
+      int pos = 0;
+      char c='a';
+      while (c!='\r'){
+        c = input_getc();
+        line[pos]=c;
+        if (c=='\b'){
+          line[pos]='\0';
+          if (pos>0){
+            pos--;
+            printf("\b \b");
+          }
+          else{
+            printf("");
+          }
+        }
+        else{
+          printf("%c",c);
+          pos++;
+        }
+      }
+      line[pos-1]='\0';
+      printf("\n");
+      if (strcmp(line,"whoami") == 0){
+          printf("Isuru Gunarathne 200189M\n");
+          printf("Joel Sathiyendra 200590J\n");
+      }
+      else if (strcmp(line,"exit")==0){
+        printf("sike!!!!! thats the wrong number\n");
+        break;
+      }
+      else if (strcmp(line,"shutdown")==0){
+        shutdown_power_off ();
+      }
+      else if (strcmp(line,"time") == 0){
+        printf("Time passed since kernel started = %lu s\n",rtc_get_time());
+      }
+      else if (strcmp(line,"ram") == 0){
+        printf("The amount of ram available is : %lu kB\n",init_ram_pages*4);
+      }
+      else if (strcmp(line,"thread" )== 0){
+        thread_print_stats();
+      }
+      else if (strcmp(line,"priority")==0){
+        printf("Priority of this thread is %i\n", thread_get_priority());
+      }
+      else{
+        printf("Invalid command\n");
+      }
+    }
   }
 
   /* Finish up. */
@@ -208,7 +271,7 @@ read_command_line (void)
   for (i = 0; i < argc; i++) 
     {
       if (p >= end)
-        PANIC ("command line arguments overflow");
+        PANIC ("Command line arguments overflow");
 
       argv[i] = p;
       p += strnlen (p, end - p) + 1;
