@@ -94,6 +94,11 @@ struct thread
 
     struct thread* parent;
 
+    int exit_code;
+
+    struct list files;
+    int fd_count;
+
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */

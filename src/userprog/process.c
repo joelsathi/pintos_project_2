@@ -113,7 +113,7 @@ process_exit (void)
   struct thread *cur = thread_current ();
   uint32_t *pd;
 
-  int exitCode = 0;
+  int exitCode = thread_current()->exit_code;
   printf("%s: exit(%d)\n",cur->name,exitCode);
 
   /* Destroy the current process's page directory and switch back

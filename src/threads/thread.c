@@ -11,6 +11,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "list.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -461,6 +462,9 @@ init_thread (struct thread *t, const char *name, int priority)
   t->magic = THREAD_MAGIC;
   t->ex = false;
   t->parent = running_thread();
+  t->exit_code = -1;
+  list_init(&t->files);
+  t->fd_count = 2;
   list_push_back (&all_list, &t->allelem);
 }
 
