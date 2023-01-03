@@ -72,6 +72,8 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
+bool priority_cmp_less_than_func(const struct list_elem *curElement, const struct list_elem *otherElement);
+
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
    general and it is possible in this case only because loader.S
@@ -585,4 +587,14 @@ bool cmp_waketick(struct list_elem *first, struct list_elem *second, void *aux)
 
   return fthread->waketick < sthread->waketick;
 
+}
+
+// Compare the priorities of threads
+bool 
+priority_cmp_less_than_func(const struct list_elem *curElement, const struct list_elem *otherElement)
+{
+  struct thread *curThread = list_entry(curElement, struct thread, elem);
+  struct thread *otherThread = list_entry(otherElement, struct thread, elem);
+
+  return curThread->priority > otherThread->priority;
 }
