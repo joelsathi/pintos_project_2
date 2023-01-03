@@ -60,11 +60,15 @@ syscall_handler (struct intr_frame *f UNUSED)
           
   */
 
-  int systemCall = *(int *)f->esp;
-
   uint32_t *argv0 = data_pointer + 1;
   uint32_t *argv1 = data_pointer + 2;
   uint32_t *argv2 = data_pointer + 3;
+
+  if (!isValidPointer(data_pointer) || !isValidPointer(argv0) || !isValidPointer(argv1) || !isValidPointer(argv2)){
+    exit(-1);
+  }
+
+  int systemCall = *(int *)f->esp;
 
 //   static bool 
 // remove(const char *file)
@@ -92,8 +96,8 @@ syscall_handler (struct intr_frame *f UNUSED)
       break;
     
     case SYS_EXEC:
-      if (!isValidPointer((char *)argv0))
-        exit(-1);
+      // if (!isValidPointer((char *)argv0))
+      //   exit(-1);
 
       lock_acquire(&file_lock);
       f->eax = process_execute((char *)*argv0);
@@ -102,6 +106,7 @@ syscall_handler (struct intr_frame *f UNUSED)
       break;
     
     case SYS_WAIT:
+      f->eax = process_wait(*argv0);
       break;
     
     case SYS_CREATE:
@@ -109,9 +114,9 @@ syscall_handler (struct intr_frame *f UNUSED)
       break;
     
     case SYS_REMOVE:
-      if (!isValidPointer(argv0)){
-        exit(-1);
-      }
+      // if (!isValidPointer(argv0)){
+      //   exit(-1);
+      // }
 
       lock_acquire(&file_lock);
       f->eax = filesys_remove((char *)*argv0);
@@ -152,28 +157,28 @@ syscall_handler (struct intr_frame *f UNUSED)
       break;
     
     case SYS_TELL:
-      if (isValidPointer(*argv0)){
-        currentFileDet = get_open_file_details(*((int*) argv0));
-        if (currentFileDet == NULL){
-          f->eax = -1;
-        }
-        else{
-          lock_acquire(&file_lock);
-          f->eax = file_tell(currentFileDet->cur_file);
-          lock_release(&file_lock);
-        }        
+      // if (isValidPointer(*argv0)){
+      currentFileDet = get_open_file_details(*((int*) argv0));
+      if (currentFileDet == NULL){
+        f->eax = -1;
       }
       else{
-        exit(-1);
-      }
+        lock_acquire(&file_lock);
+        f->eax = file_tell(currentFileDet->cur_file);
+        lock_release(&file_lock);
+      }        
+      // }
+      // else{
+      //   exit(-1);
+      // }
       break;
     
     case SYS_CLOSE:
-      file_close(*((int*) argv0));
+      close_file(* argv0);
       break;
     
     default:
-      printf("Interrupt not defined!!!\n");
+      break;
   }
 }
 
@@ -241,7 +246,8 @@ open_file(const char *file)
     fd = currentFileDet->fd;
 
     // Insert the struct
-    list_insert_ordered(open_file_list, &currentFileDet->elem, (list_less_func *)priority_cmp_less_than_func, NULL);
+    list_push_back(&thread_current()->files, &currentFileDet->elem);
+    // list_insert_ordered(open_file_list, &currentFileDet->elem, (list_less_func *)priority_cmp_less_than_func, NULL);
   }
 
   // Release the lock
@@ -259,34 +265,40 @@ read_file(int fd, const void* buffer, unsigned size){
     exit(-1);
   
   // Check the pointer for the ending of the buffer is valid or not
-  if (!isValidPointer(buffer + size -1))
+  if (!isValidPointer(buffer + size - 1))
     exit(-1);
   
   int ret = -1;
 
-  lock_acquire(&file_lock);
+  
   // Get the input from the console
   if (fd == 0){
     uint8_t* bp = buffer;
+    uint8_t c;
     // Get while the input is not null
+    unsigned int cnt;
     for (int i=0; i<size; i++){
-      bp[i] = input_getc();
+      c = input_getc();
+      if (c == 0)
+        break;
+      bp[i] = c;
+      cnt ++;
     }
+    bp++;
+    *bp = 0;
 
     // Set up the stack pointer value
-    ret = size;
+    ret = size-cnt;
   }
   else{
     struct file_details* currentFileDet = get_open_file_details(fd);
     if (currentFileDet != NULL){
+      lock_acquire(&file_lock);
       ret = file_read(currentFileDet->cur_file, buffer, size);
-    }
-    else{
-      ret = -1;
+      lock_release(&file_lock);
     }
   }
 
-  lock_release(&file_lock);
   return ret;
 }
 
@@ -330,20 +342,46 @@ write_to_file(int fd, const void* buffer, unsigned size){
 void
 close_file(int fd){
 
-  struct file_details *currentFileDet = get_open_file_details(fd);
+  struct list_elem *e;
+  struct list files = thread_current()->files;
 
-  if (currentFileDet == NULL){
-    return;
-  }
+  for (e = list_begin (&files); e != list_end (&files); e = list_next (e))
+    {
+      struct file_details *currentFileDet = list_entry (e, struct file_details, elem);
 
-  lock_acquire(&file_lock);
-  file_close(currentFileDet->cur_file);
-  lock_release(&file_lock);
+      // If found return
+      if (currentFileDet->fd == fd){
+        lock_acquire(&file_lock);
+
+        file_close(currentFileDet->cur_file);
+        list_remove(&currentFileDet->elem);
+
+        lock_release(&file_lock);
+
+        break;
+      }
+      
+      // since the list is sorted, we can return once the fd value exceeds
+      // else if (currentFileDet->fd > fd)
+      //   return NULL;
+    }
+
+  // struct file_details *currentFileDet = get_open_file_details(fd);
+
+  // if (currentFileDet == NULL){
+  //   return;
+  // }
+
+  // lock_acquire(&file_lock);
+  // file_close(currentFileDet->cur_file);
+  // lock_release(&file_lock);
 }
 
 void 
 exit(int status)
 {
+  printf("%s: exit(%d)\n",thread_current()->name,status);
+
   thread_current()->parent->ex = true;
   thread_current()->exit_code = status;
   thread_exit();
