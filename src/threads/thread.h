@@ -5,6 +5,7 @@
 #include <list.h>
 #include <stdint.h>
 #include <kernel/list.h>
+#include "threads/synch.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -90,14 +91,28 @@ struct thread
 
     int64_t waketick;
 
+    // check whether the thread is exited or not
     bool ex;
 
+    // Parent of the thread
     struct thread* parent;
 
+    // Exit code for the thread process
     int exit_code;
 
+    // The list of files opened by the thread
     struct list files;
     int fd_count;
+
+    // List to hold all the child processes
+    struct list child_processes;
+
+    int child_load_status;
+    int child_exit_status;
+
+    // The executable file of the current thread
+    struct file* exec_file;
+    struct semaphore waitThread;
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -145,5 +160,7 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 bool cmp_waketick(struct list_elem *first, struct list_elem *second, void *aux);
+
+bool priority_cmp_less_than_func(const struct list_elem *curElement, const struct list_elem *otherElement);
 
 #endif /* threads/thread.h */
