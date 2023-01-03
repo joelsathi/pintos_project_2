@@ -39,12 +39,17 @@ process_execute (const char *file_name)
   strlcpy (fn_copy, file_name, PGSIZE);
 
   // Get the file name
-  char *save_ptr;
-  file_name = strtok_r(file_name, " ", &save_ptr);
+  char *save_ptr, *file_name_only;
+
+  file_name_only = malloc(strlen(file_name)+1);
+  strlcpy (file_name_only, file_name, strlen(file_name)+1);
+  
+  file_name_only = strtok_r(file_name_only, " ", &save_ptr);
   // printf("File name is %s\n", file_name);
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (file_name_only, PRI_DEFAULT, start_process, fn_copy);
+  free(file_name_only);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;
