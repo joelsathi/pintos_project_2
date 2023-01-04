@@ -185,7 +185,7 @@ syscall_handler (struct intr_frame *f )
         get_args_1(f, SYS_CLOSE,args);
         break;
     default:
-        exit(-1);
+        // exit(-1);
         break;
     }
 }
