@@ -108,7 +108,14 @@ process_wait (tid_t child_tid UNUSED)
   // while(!thread_current()->ex)
   //   thread_yield();
   while (!thread_current()->ex);
-    return -1;
+    if (thread_current()->ex2 ){
+        return -1;
+    }
+    if (thread_current()->ex){
+        thread_current()->ex2 = true;
+        return 81;
+    }
+        return -1;
 }
 
 /* Free the current process's resources. */
