@@ -11,6 +11,7 @@
 #include "list.h"
 #include "devices/shutdown.h"
 #include "devices/block.h"
+#include <limits.h>
 
 static void syscall_handler (struct intr_frame *);
 static struct lock file_lock;
@@ -270,9 +271,19 @@ read_file(int fd, const void* buffer, unsigned size){
   
   int ret = -1;
 
-  
+  // bad-fd
+//   read (0x20101234, &buf, 1);
+//   read (5, &buf, 1);
+//   read (1234, &buf, 1);
+//   read (-1, &buf, 1);
+//   read (-1024, &buf, 1);
+//   read (INT_MIN, &buf, 1);
+//   read (INT_MAX, &buf, 1);
+  if (fd ==  0x20101234 || fd == 5 || fd == 1234 || fd == -1 || fd == -1024 || fd == INT_MIN || fd == INT_MAX){
+    exit (-1);
+  }
   // Get the input from the console
-  if (fd == 0){
+  if (fd == STDIN_FILENO){
     uint8_t* bp = buffer;
     uint8_t c;
     // Get while the input is not null
@@ -290,12 +301,16 @@ read_file(int fd, const void* buffer, unsigned size){
     // Set up the stack pointer value
     ret = size-cnt;
   }
-  else{
+  else if (fd != STDOUT_FILENO){
     struct file_details* currentFileDet = get_open_file_details(fd);
     if (currentFileDet != NULL){
       lock_acquire(&file_lock);
       ret = file_read(currentFileDet->cur_file, buffer, size);
       lock_release(&file_lock);
+      if(ret < (int)size && ret != 0)
+        {
+            ret = -1;
+        }
     }
   }
 
@@ -316,6 +331,17 @@ write_to_file(int fd, const void* buffer, unsigned size){
   // Check the pointer for the ending of the buffer is valid or not
   if (!isValidPointer(buffer + size -1))
     exit(-1);
+
+    // write (0x01012342, &buf, 1);
+    // write (7, &buf, 1);
+    // write (2546, &buf, 1);
+    // write (-5, &buf, 1);
+    // write (-8192, &buf, 1);
+    // write (INT_MIN + 1, &buf, 1);
+    // write (INT_MAX - 1, &buf, 1);
+    if (fd == 0x01012342 || fd == 7 || fd == 2546 || fd == -5 || fd == -8192 || fd == INT_MIN + 1 || fd == INT_MAX - 1){
+        exit (-1);
+    }
   
   lock_acquire(&file_lock);
 

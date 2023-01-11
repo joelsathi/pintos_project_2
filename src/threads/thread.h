@@ -93,7 +93,7 @@ struct thread
 
     // check whether the thread is exited or not
     bool ex;
-
+   bool ex2;
     // Parent of the thread
     struct thread* parent;
 

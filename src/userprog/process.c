@@ -108,7 +108,7 @@ process_wait (tid_t child_tid UNUSED)
   // while(!thread_current()->ex)
   //   thread_yield();
   while (!thread_current()->ex);
-  return -1;
+    return -1;
 }
 
 /* Free the current process's resources. */
