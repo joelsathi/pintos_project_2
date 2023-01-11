@@ -174,7 +174,7 @@ syscall_handler (struct intr_frame *f UNUSED)
       break;
     
     case SYS_CLOSE:
-      close_file(* argv0);
+    //   close_file(* argv0);
       break;
     
     default:
