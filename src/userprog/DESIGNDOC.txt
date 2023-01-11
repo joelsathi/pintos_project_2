@@ -90,6 +90,19 @@ Isuru Gunarathne <isurug.20@cse.mrt.ac.lk>
 >> loading.  How does your code ensure this?  How is the load
 >> success/failure status passed back to the thread that calls "exec"?
 
+	To ensure that the exec() function does not return before the new 
+	executable has finished loading, we use a semaphore. When a new executable 
+	thread is added to the parent's child_processes in the thread_create() 
+	function, we call sema_down. This ensures that the exec function does not 
+	return until the parent thread is awakened by a call to 
+	sema_up on the child thread in the start_process() function after 
+	the load() function has completed. 
+	This guarantees that the new executable has finished loading. 
+	If the load is not successful, the parent thread will wake up and the 
+	exec() function will return -1. If it is successful, the function will 
+	return the child's pid.
+
+ 
 >> B8: Consider parent process P with child process C.  How do you
 >> ensure proper synchronization and avoid race conditions when P
 >> calls wait(C) before C exits?  After C exits?  How do you ensure
@@ -102,11 +115,22 @@ Isuru Gunarathne <isurug.20@cse.mrt.ac.lk>
 >> B9: Why did you choose to implement access to user memory from the
 >> kernel in the way that you did?
 
+	We chose to use page faults to signal a bad pointer in user memory for 
+	improved performance, as it utilizes the MMU. This approach is faster 
+	than constantly checking for a NULL pointer. However, if the pointer is bad,
+	the resulting page fault interrupt will cause a significant slowdown. 
+	Despite this, overall performance is improved because this check is not 
+	needed all the time, and if a page fault is triggered the thread will have 
+	to exit regardless, so the slowdown in that specific instance is 
+	insignificant.
+
 >> B10: What advantages or disadvantages can you see to your design
 >> for file descriptors?
 
 >> B11: The default tid_t to pid_t mapping is the identity mapping.
 >> If you changed it, what advantages are there to your approach?
+
+No, we didnt change it.
 
 			   SURVEY QUESTIONS
 			   ================
